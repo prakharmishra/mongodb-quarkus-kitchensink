@@ -1,0 +1,112 @@
+volumes:
+  postgres-data:
+
+secrets:
+  postgres-username:
+    file: ./secrets/postgres-username.txt
+  postgres-password:
+    file: ./secrets/postgres-password.txt
+  mongo-db-username:
+    file: ./secrets/mongo-db-username.txt
+  mongo-db-password:
+    file: ./secrets/mongo-db-password.txt
+  keycloak-admin-username:
+    file: ./secrets/keycloak-admin-username.txt
+  keycloak-admin-password:
+    file: ./secrets/keycloak-admin-password.txt
+
+services:
+  app:
+    container_name: kitchen-sink-app
+    build: 
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      QUARKUS_KEYCLOAK_AUTH_SERVER_URL: http://keycloak:8080/auth
+      QUARKUS_KEYCLOAK_REALM: quarkus
+      QUARKUS_KEYCLOAK_CLIENT_ID: quarkus-app
+    secrets:
+      - mongo-db-username
+      - mongo-db-password
+      - keycloak-admin-username
+      - keycloak-admin-password
+
+    volumes:
+      - ../..:/workspaces:cached
+      
+    # Overrides default command so things don't shut down after the process ends.
+    command: sleep infinity
+
+    # Runs app on the same network as the database container, allows "forwardPorts" in devcontainer.json function.
+    network_mode: service:postgres
+
+    # Use "forwardPorts" in **devcontainer.json** to forward an app port locally. 
+    # (Adding the "ports" property to this file will not forward from a Codespace.)
+    depends_on:
+      keycloak:
+        condition: service_healthy
+
+  postgres:
+    container_name: kitchensink-keycloak-postgres
+    image: postgres:latest
+    restart: unless-stopped
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    environment:
+      # NOTE: POSTGRES_DB/USER/PASSWORD should match values in app container
+      POSTGRES_PASSWORD_FILE: /run/secrets/postgres-password
+      POSTGRES_USER_FILE: /run/secrets/postgres-username
+      POSTGRES_DB: keycloak
+    secrets:
+      - postgres-username
+      - postgres-password
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $(cat /run/secrets/postgres-username) -d keycloak"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+    # Add "forwardPorts": ["5432"] to **devcontainer.json** to forward PostgreSQL locally.
+    # (Adding the "ports" property to this file will not forward from a Codespace.)
+  
+  keycloak:
+    build: 
+      context: .
+      dockerfile: Keycloak.Dockerfile
+    container_name: keycloak
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      KC_BOOTSTRAP_ADMIN_USERNAME_FILE: /run/secrets/keycloak-admin-username
+      KC_BOOTSTRAP_ADMIN_PASSWORD_FILE: /run/secrets/keycloak-admin-password
+
+      # Database config (static parts)
+      KC_DB: postgres
+      KC_DB_URL_HOST: postgres
+      KC_DB_URL_DATABASE: keycloak
+      KC_DB_SCHEMA: public
+
+      # Read DB creds from the SAME Docker secrets as Postgres
+      KC_DB_USERNAME_FILE: /run/secrets/postgres-username
+      KC_DB_PASSWORD_FILE: /run/secrets/postgres-password
+
+      # Optional health/metrics
+      KC_HEALTH_ENABLED: "true"
+      KC_METRICS_ENABLED: "true"
+    command:
+      - start-dev
+    ports:
+      - "8081:8080"
+      - "9000:9000"
+    secrets:
+      - postgres-username
+      - postgres-password
+      - keycloak-admin-username
+      - keycloak-admin-password
+    healthcheck:
+      test: ["CMD-SHELL", '[ -f /tmp/HealthCheck.java ] || echo "public class HealthCheck { public static void main(String[] args) throws java.lang.Throwable { System.exit(java.net.HttpURLConnection.HTTP_OK == ((java.net.HttpURLConnection)new java.net.URI(args[0]).toURL().openConnection()).getResponseCode() ? 0 : 1); } }" > /tmp/HealthCheck.java && java /tmp/HealthCheck.java http://localhost:8080']
+      interval: 5s
+      timeout: 4s
+      retries: 3
+      start_period: 20s
