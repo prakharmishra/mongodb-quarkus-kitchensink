@@ -25,3 +25,8 @@ replay_pid*
 
 */secrets/*
 backend/target/*
+.vscode/*
+
+*/.settings/*
+.classpath
+.project
