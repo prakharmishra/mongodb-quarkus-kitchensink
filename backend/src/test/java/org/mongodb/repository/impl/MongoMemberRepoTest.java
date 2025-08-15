@@ -4,14 +4,15 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 import java.util.*;
 import org.bson.conversions.Bson;
+import org.bson.types.ObjectId;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mongodb.model.Member;
-import org.mongodb.repository.MongoTransactionManager;
+import org.mongodb.model.CursorPage;
+import org.mongodb.repository.MongoCollectionOps;
 import com.mongodb.client.MongoClient;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
-import com.mongodb.client.ClientSession;
 import com.mongodb.client.FindIterable;
 
 public class MongoMemberRepoTest {
@@ -19,19 +20,27 @@ public class MongoMemberRepoTest {
     private MongoClient mongoClient;
     private MongoDatabase mongoDatabase;
     private MongoCollection<Member> collection;
-    private MongoTransactionManager transactionManager;
+    private MongoCollectionOps collectionOps;
     private MongoMemberRepo repo;
+    private FindIterable<Member> findIterable;
 
     @BeforeEach
+    @SuppressWarnings("unchecked")
     void setUp() {
         mongoClient = mock(MongoClient.class);
         mongoDatabase = mock(MongoDatabase.class);
         collection = mock(MongoCollection.class);
-        transactionManager = mock(MongoTransactionManager.class);
+        collectionOps = mock(MongoCollectionOps.class);
+        findIterable = mock(FindIterable.class);
+
         when(mongoClient.getDatabase(anyString())).thenReturn(mongoDatabase);
         when(mongoDatabase.getCollection(anyString(), eq(Member.class))).thenReturn(collection);
+        when(findIterable.sort(any())).thenReturn(findIterable);
+        when(findIterable.limit(anyInt())).thenReturn(findIterable);
+        // Using doReturn for generic return type
+        doReturn(findIterable).when(collectionOps).find(any(), any());
 
-        repo = new MongoMemberRepo(mongoClient, transactionManager);
+        repo = new MongoMemberRepo(mongoClient, collectionOps);
 
         // Set private fields via reflection for testing
         setField(repo, "databaseName", "testdb");
@@ -39,123 +48,99 @@ public class MongoMemberRepoTest {
     }
 
     @Test
-    void testFindById_NoSession() {
-        String id = "123";
-        Member member = new Member("123", "John Doe", "x@y.com", "1234567890");
-        FindIterable<Member> iterable = mock(FindIterable.class);
+    void testFindById() {
+        // Given
+        ObjectId objectId = new ObjectId();
+        Member expectedMember = new Member(objectId, "John Doe", "john@example.com", "1234567890", List.of("USER"));
+        
+        when(findIterable.first()).thenReturn(expectedMember);
 
-        when(transactionManager.getClientSession()).thenReturn(Optional.empty());
-        when(collection.find(any(Bson.class))).thenReturn(iterable);
-        when(iterable.first()).thenReturn(member);
+        // When
+        Optional<Member> result = repo.findById(objectId.toString());
 
-        Optional<Member> result = repo.findById(id);
-
+        // Then
         assertTrue(result.isPresent());
-        assertEquals(member, result.get());
-        verify(collection).find(any(Bson.class));
+        assertEquals(expectedMember, result.get());
+        verify(collectionOps).find(eq(collection), any());
     }
 
     @Test
-    void testFindById_WithSession() {
-        String id = "456";
-        Member member = new Member("123", "John Doe", "x@y.com", "1234567890");
-        ClientSession session = mock(ClientSession.class);
+    void testFindById_InvalidId() {
+        // When
+        Optional<Member> result = repo.findById("");
 
-        when(transactionManager.getClientSession()).thenReturn(Optional.of(session));
-        when(transactionManager.execute(any())).thenAnswer(invocation -> {
-            return Optional.of(member);
-        });
-
-        Optional<Member> result = repo.findById(id);
-
-        assertTrue(result.isPresent());
-        assertEquals(member, result.get());
-        verify(transactionManager).execute(any());
+        // Then
+        assertTrue(result.isEmpty());
     }
 
     @Test
-    void testFindAll_NoSession() {
-        Member member1 = new Member("123", "John Doe", "x@y.com", "1234567890");
-        Member member2 = new Member("234", "John Doe 2", "x2@y.com", "1234567890");
-        List<Member> members = Arrays.asList(member1, member2);
-        FindIterable<Member> iterable = mock(FindIterable.class);
+    void testListMembersPage() {
+        // Given
+        int pageSize = 2;
+        ObjectId cursor = new ObjectId();
+        ObjectId id1 = new ObjectId();
+        ObjectId id2 = new ObjectId();
+        
+        List<Member> members = Arrays.asList(
+            new Member(id1, "John Doe", "john@example.com", "1234567890", List.of("USER")),
+            new Member(id2, "Jane Doe", "jane@example.com", "0987654321", List.of("USER"))
+        );
 
-        when(transactionManager.getClientSession()).thenReturn(Optional.empty());
-        when(collection.find()).thenReturn(iterable);
-        when(iterable.into(any(List.class))).thenAnswer(invocation -> {
-            List<Member> list = invocation.getArgument(0);
-            list.addAll(members);
-            return list;
-        });
+        // findIterable setup is done in setUp()
+        when(findIterable.into(any())).thenReturn(members);
 
-        List<Member> result = repo.findAll();
+        // When
+        CursorPage<Member> result = repo.listMembersPage(pageSize, cursor.toString());
 
-        assertEquals(2, result.size());
-        verify(collection).find();
+        // Then
+        assertNotNull(result);
+        assertEquals(2, result.data().size());
+        assertEquals(id2.toString(), result.nextCursor());
+        verify(collectionOps).find(eq(collection), any());
     }
 
     @Test
-    void testFindAll_WithSession() {
-        Member member1 = new Member("123", "John Doe", "x@y.com", "1234567890");
-        Member member2 = new Member("234", "John Doe 2", "x2@y.com", "1234567890");
-        List<Member> members = Arrays.asList(member1, member2);
-        ClientSession session = mock(ClientSession.class);
+    void testListMembersPage_InvalidSize() {
+        // When
+        CursorPage<Member> result = repo.listMembersPage(0, null);
 
-        when(transactionManager.getClientSession()).thenReturn(Optional.of(session));
-        when(transactionManager.execute(any())).thenAnswer(invocation -> {
-            return Optional.of(members);
-        });
-
-        List<Member> result = repo.findAll();
-
-        assertEquals(2, result.size());
-        verify(transactionManager).execute(any());
+        // Then
+        assertTrue(result.data().isEmpty());
+        assertNull(result.nextCursor());
     }
 
     @Test
-    void testSave_NoSession() {
-        Member member = new Member("123", "John Doe", "x@y.com", "1234567890");
+    void testSave() {
+        // Given
+        ObjectId id = new ObjectId();
+        Member member = new Member(id, "John Doe", "john@example.com", "1234567890", List.of("USER"));
 
-        when(transactionManager.getClientSession()).thenReturn(Optional.empty());
-
+        // When
         repo.save(member);
 
-        verify(collection).insertOne(member);
+        // Then
+        verify(collectionOps).insertOne(eq(collection), eq(member));
     }
 
     @Test
-    void testSave_WithSession() {
-        Member member = new Member("123", "John Doe", "x@y.com", "1234567890");
-        ClientSession session = mock(ClientSession.class);
+    void testDeleteById() {
+        // Given
+        String id = new ObjectId().toString();
 
-        when(transactionManager.getClientSession()).thenReturn(Optional.of(session));
-
-        repo.save(member);
-
-        verify(transactionManager).execute(any());
-    }
-
-    @Test
-    void testDeleteById_NoSession() {
-        String id = "789";
-
-        when(transactionManager.getClientSession()).thenReturn(Optional.empty());
-
+        // When
         repo.deleteById(id);
 
-        verify(collection).deleteOne(any(Bson.class));
+        // Then
+        verify(collectionOps).deleteOne(eq(collection), any(Bson.class));
     }
 
     @Test
-    void testDeleteById_WithSession() {
-        String id = "101";
-        ClientSession session = mock(ClientSession.class);
+    void testDeleteById_InvalidId() {
+        // When
+        repo.deleteById("");
 
-        when(transactionManager.getClientSession()).thenReturn(Optional.of(session));
-
-        repo.deleteById(id);
-
-        verify(transactionManager).execute(any());
+        // Then
+        verify(collectionOps, never()).deleteOne(any(), any());
     }
 
     // Helper to set private fields via reflection
