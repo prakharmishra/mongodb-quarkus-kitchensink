@@ -25,7 +25,6 @@ services:
       QUARKUS_KEYCLOAK_AUTH_SERVER_URL: http://keycloak:8080/auth
       QUARKUS_KEYCLOAK_REALM: quarkus
       QUARKUS_KEYCLOAK_CLIENT_ID: quarkus-app
-      
     secrets:
       - mongo-db-username
       - mongo-db-password
