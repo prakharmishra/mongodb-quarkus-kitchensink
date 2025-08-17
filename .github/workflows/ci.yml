@@ -10,6 +10,10 @@ jobs:
   test:
     runs-on: ubuntu-latest
     
+    env:
+      mongo-db-username: ${{ secrets.MONGO_USERNAME }}
+      mongo-db-password: ${{ secrets.MONGO_PASSWORD }}
+    
     steps:
     - uses: actions/checkout@v4
     
@@ -27,6 +31,9 @@ jobs:
         restore-keys: ${{ runner.os }}-m2
     
     - name: Run tests with coverage
+      env:
+        mongo-db-username: ${{ secrets.MONGO_USERNAME }}
+        mongo-db-password: ${{ secrets.MONGO_PASSWORD }}
       run: |
         cd backend
         ./mvnw clean test jacoco:report
