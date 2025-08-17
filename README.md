@@ -1,67 +1,143 @@
-# mongodb-quarkus-kitchensink
+# MongoDB Quarkus Kitchen Sink
 
-This project uses Quarkus, the Supersonic Subatomic Java Framework.
+A full-stack web application demonstrating modern development practices with Quarkus backend, React frontend, and containerized development environment.
 
-If you want to learn more about Quarkus, please visit its website: <https://quarkus.io/>.
+## Project Structure
 
-## Running the application in dev mode
+```
+mongodb-quarkus-kitchensink/
+├── backend/                 # Quarkus Java backend
+│   ├── src/                # Java source code
+│   ├── pom.xml            # Maven dependencies
+│   └── README.md          # Backend-specific documentation
+├── frontend/               # React TypeScript frontend
+│   ├── src/               # React components and services
+│   ├── package.json       # Node.js dependencies
+│   └── public/            # Static assets
+├── .devcontainer/         # Development container configuration
+│   ├── docker-compose.yml # Services (Postgres, Keycloak, MongoDB)
+│   ├── secrets/           # Secret files (create manually)
+│   └── devcontainer.json  # VS Code dev container config
+└── README.md              # This file
+```
 
-You can run your application in dev mode that enables live coding using:
+## Technology Stack
 
-```shell script
+- **Backend**: Quarkus (Java), MongoDB, Keycloak Authentication
+- **Frontend**: React, TypeScript, Material-UI, Vite
+- **Infrastructure**: Docker, PostgreSQL, Keycloak
+- **Development**: VS Code Dev Containers
+
+## Prerequisites
+
+- Docker Desktop
+- VS Code with Dev Containers extension
+- Git
+
+## Setup Instructions
+
+### 1. Clone the Repository
+
+```bash
+git clone <repository-url>
+cd mongodb-quarkus-kitchensink
+```
+
+### 2. Create Secrets Directory
+
+Create the secrets directory and required secret files:
+
+```bash
+mkdir -p .devcontainer/secrets
+```
+
+Create the following secret files in `.devcontainer/secrets/`:
+
+```bash
+# Database credentials
+echo "postgres" > .devcontainer/secrets/postgres-username.txt
+echo "your-postgres-password" > .devcontainer/secrets/postgres-password.txt
+
+# MongoDB credentials
+echo "mongodb" > .devcontainer/secrets/mongo-db-username.txt
+echo "your-mongodb-password" > .devcontainer/secrets/mongo-db-password.txt
+
+# Keycloak admin credentials
+echo "admin" > .devcontainer/secrets/keycloak-admin-username.txt
+echo "your-keycloak-admin-password" > .devcontainer/secrets/keycloak-admin-password.txt
+```
+
+### 3. Open in Dev Container
+
+1. Open the project in VS Code
+2. When prompted, click "Reopen in Container" or use Command Palette: `Dev Containers: Reopen in Container`
+3. Wait for the container to build and services to start
+
+### 4. Start the Applications
+
+#### Backend (Quarkus)
+```bash
+cd backend
 ./mvnw quarkus:dev
 ```
+Backend will be available at: http://localhost:8080
 
-> **_NOTE:_**  Quarkus now ships with a Dev UI, which is available in dev mode only at <http://localhost:8080/q/dev/>.
-
-## Packaging and running the application
-
-The application can be packaged using:
-
-```shell script
-./mvnw package
+#### Frontend (React)
+```bash
+cd frontend
+npm install
+npm run dev
 ```
+Frontend will be available at: http://localhost:5173
 
-It produces the `quarkus-run.jar` file in the `target/quarkus-app/` directory.
-Be aware that it’s not an _über-jar_ as the dependencies are copied into the `target/quarkus-app/lib/` directory.
+## Services
 
-The application is now runnable using `java -jar target/quarkus-app/quarkus-run.jar`.
+The dev container includes the following services:
 
-If you want to build an _über-jar_, execute the following command:
+- **PostgreSQL**: Database for Keycloak (port 5432)
+- **Keycloak**: Authentication server (port 8081)
+- **MongoDB**: Application database (configured in backend)
 
-```shell script
-./mvnw package -Dquarkus.package.jar.type=uber-jar
-```
+## Development Workflow
 
-The application, packaged as an _über-jar_, is now runnable using `java -jar target/*-runner.jar`.
+1. **Backend Development**: Make changes in `backend/src/`, Quarkus hot reload is enabled
+2. **Frontend Development**: Make changes in `frontend/src/`, Vite provides hot module replacement
+3. **Database**: Access PostgreSQL at `localhost:5432`, MongoDB connection configured in backend
+4. **Authentication**: Keycloak admin console at http://localhost:8081
 
-## Creating a native executable
+## Key Features
 
-You can create a native executable using:
+- User registration and authentication via Keycloak
+- Member management (CRUD operations)
+- Role-based access control (Admin/User roles)
+- Responsive Material-UI frontend
+- RESTful API with Quarkus
+- MongoDB integration
+- Containerized development environment
 
-```shell script
-./mvnw package -Dnative
-```
+## Troubleshooting
 
-Or, if you don't have GraalVM installed, you can run the native executable build in a container using:
+### Container Issues
+- Ensure Docker Desktop is running
+- Check that all secret files exist in `.devcontainer/secrets/`
+- Rebuild container: Command Palette → `Dev Containers: Rebuild Container`
 
-```shell script
-./mvnw package -Dnative -Dquarkus.native.container-build=true
-```
+### Service Connection Issues
+- Verify services are healthy: `docker-compose ps`
+- Check logs: `docker-compose logs <service-name>`
+- Restart services: `docker-compose restart`
 
-You can then execute your native executable with: `./target/mongodb-quarkus-kitchensink-1.0.0-SNAPSHOT-runner`
+### Port Conflicts
+- Ensure ports 5173, 8080, 8081, 5432 are available
+- Modify port mappings in `docker-compose.yml` if needed
 
-If you want to learn more about building native executables, please consult <https://quarkus.io/guides/maven-tooling>.
+## Contributing
 
-## Related Guides
+1. Create a feature branch
+2. Make your changes
+3. Test in the dev container environment
+4. Submit a pull request
 
-- REST ([guide](https://quarkus.io/guides/rest)): A Jakarta REST implementation utilizing build time processing and Vert.x. This extension is not compatible with the quarkus-resteasy extension, or any of the extensions that depend on it.
-- MongoDB client ([guide](https://quarkus.io/guides/mongodb)): Connect to MongoDB in either imperative or reactive style
+## License
 
-## Provided Code
-
-### REST
-
-Easily start your REST Web Services
-
-[Related guide section...](https://quarkus.io/guides/getting-started-reactive#reactive-jax-rs-resources)
+This project is licensed under the MIT License - see the LICENSE file for details.
