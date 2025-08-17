@@ -27,7 +27,7 @@ class MemberServiceClassicTest {
     @Test
     void testFindByIdReturnsMember() {
         // Given
-        Member member = new Member(new ObjectId("689f3a9598292c14bf413125"), "John Doe", "john@example.com", "1234567890", List.of("user"));
+        Member member = new Member(new ObjectId("689f3a9598292c14bf413125"), "user-id", "John Doe", "john@example.com", "1234567890");
         when(memberRepo.findById("123")).thenReturn(Optional.of(member));
 
         // When
@@ -55,8 +55,8 @@ class MemberServiceClassicTest {
     @Test
     void testFindAllReturnsPage() {
         // Given
-        Member member1 = new Member(new ObjectId("689f3a9598292c14bf413125"), "John Doe", "john@example.com", "1234567890", List.of("user"));
-        Member member2 = new Member(new ObjectId("234689f3a9598214bf413125"), "Jane Doe", "jane@example.com", "0987654321", List.of("user"));
+        Member member1 = new Member(new ObjectId("689f3a9598292c14bf413125"), "user1", "John Doe", "john@example.com", "1234567890");
+        Member member2 = new Member(new ObjectId("234689f3a9598214bf413125"), "user2", "Jane Doe", "jane@example.com", "0987654321");
         List<Member> members = Arrays.asList(member1, member2);
         String nextCursor = "234";
         CursorPage<Member> page = new CursorPage<>(members, nextCursor);
@@ -76,21 +76,22 @@ class MemberServiceClassicTest {
     void testSaveNewMember() {
         // Given
         UpsertMemberViewModel viewModel = new UpsertMemberViewModel(
+            "test-id",
             "John Doe",
             "john@example.com",
             "1234567890"
         );
 
         // When
-        memberService.save(viewModel);
+        memberService.register(viewModel, viewModel.userId(), viewModel.email());
 
         // Then
-        verify(memberRepo).save(argThat(member -> 
+        verify(memberRepo).register(argThat(member -> 
             member.id() == null &&
+            member.userId().equals("test-id") &&
             member.name().equals("John Doe") &&
             member.email().equals("john@example.com") &&
-            member.phoneNumber().equals("1234567890") &&
-            member.roles().equals(List.of("user"))
+            member.phoneNumber().equals("1234567890")
         ));
     }
 
@@ -99,6 +100,7 @@ class MemberServiceClassicTest {
         // Given
         String existingId = "689f3a9598292c14bf413125";
         UpsertMemberViewModel viewModel = new UpsertMemberViewModel(
+            "689f3a9598292c14bf413125",
             "John Doe Updated",
             "john.updated@example.com",
             "9876543210"
@@ -112,8 +114,7 @@ class MemberServiceClassicTest {
             member.id().equals(new ObjectId(existingId)) &&
             member.name().equals("John Doe Updated") &&
             member.email().equals("john.updated@example.com") &&
-            member.phoneNumber().equals("9876543210") &&
-            member.roles() == null
+            member.phoneNumber().equals("9876543210")
         ));
     }
 
