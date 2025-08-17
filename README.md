@@ -65,6 +65,9 @@ echo "your-mongodb-password" > .devcontainer/secrets/mongo-db-password.txt
 # Keycloak admin credentials
 echo "admin" > .devcontainer/secrets/keycloak-admin-username.txt
 echo "your-keycloak-admin-password" > .devcontainer/secrets/keycloak-admin-password.txt
+
+# OIDC client secret
+echo "your-oidc-client-secret" > .devcontainer/secrets/oidc-client-secret.txt
 ```
 
 ### 3. Open in Dev Container
