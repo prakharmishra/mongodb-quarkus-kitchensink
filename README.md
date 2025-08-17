@@ -106,6 +106,8 @@ cd backend
 
 View coverage report at: `backend/target/site/jacoco/index.html`
 
+**Online Coverage Report**: [View on GitHub Pages](https://your-username.github.io/mongodb-quarkus-kitchensink/coverage/)
+
 ## Services
 
 The dev container includes the following services:
