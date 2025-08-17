@@ -5,6 +5,7 @@ import type { Member } from '../services/api';
 import { MemberService } from '../services/api';
 import { useNotification } from '../contexts/NotificationContext';
 import { useLoading } from '../contexts/LoadingContext';
+import { useAuth } from '../contexts/AuthContext';
 
 export default function MemberDetail() {
   const { id } = useParams<{ id: string }>();
@@ -12,6 +13,9 @@ export default function MemberDetail() {
   const [member, setMember] = useState<Member | null>(null);
   const { showSuccess, showError } = useNotification();
   const { showLoading, hideLoading } = useLoading();
+  const { getUser } = useAuth();
+  const user = getUser();
+  const isAdmin = user?.realm_access?.roles?.includes('ADMIN') || false;
 
   useEffect(() => {
     if (id) {
@@ -56,25 +60,31 @@ export default function MemberDetail() {
   }
 
   return (
-    <Box sx={{ width: '100%' }}>
-      <Typography variant="h4" sx={{ mb: 3, textAlign: 'center' }}>Member Details</Typography>
-      <Paper sx={{ p: 4, mb: 3 }}>
-        <Typography variant="h6" sx={{ color: 'primary.main' }}>Name</Typography>
-        <Typography sx={{ mb: 3, fontSize: '1.1rem' }}>{member.name}</Typography>
+    <Box 
+      display='flex'
+      justifyContent='center'
+    >
+      <Box sx={{ maxWidth: 500, width: '100%' }}>
+      <Paper sx={{ p: 4 }}>
+        <Typography variant="h4" gutterBottom>Member Details</Typography>
+        <Typography variant="h6" sx={{ color: 'primary.main' }}>First Name</Typography>
+        <Typography sx={{ mb: 3, fontSize: '1.1rem' }}>{member.firstName}</Typography>
+
+        <Typography variant="h6" sx={{ color: 'primary.main' }}>Last Name</Typography>
+        <Typography sx={{ mb: 3, fontSize: '1.1rem' }}>{member.lastName}</Typography>
 
         <Typography variant="h6" sx={{ color: 'primary.main' }}>Email</Typography>
         <Typography sx={{ mb: 3, fontSize: '1.1rem', wordBreak: 'break-word' }}>{member.email}</Typography>
 
         <Typography variant="h6" sx={{ color: 'primary.main' }}>Phone Number</Typography>
         <Typography sx={{ mb: 3, fontSize: '1.1rem' }}>{member.phoneNumber}</Typography>
-      </Paper>
-
-      <Box sx={{ 
-        display: 'flex', 
-        gap: 2,
-        justifyContent: 'center',
-        flexDirection: { xs: 'column', sm: 'row' }
-      }}>
+        <Box sx={{ 
+          display: 'flex', 
+          gap: 2,
+          justifyContent: 'center',
+          flexDirection: { xs: 'column', sm: 'row' },
+          mt: 3
+        }}>
         <Button 
           variant="contained" 
           color="primary"
@@ -85,16 +95,18 @@ export default function MemberDetail() {
         >
           Edit
         </Button>
-        <Button 
-          variant="contained" 
-          color="error"
-          sx={{ 
-            minWidth: { xs: '100%', sm: '120px' }
-          }}
-          onClick={handleDelete}
-        >
-          Delete
-        </Button>
+        {isAdmin && (
+          <Button 
+            variant="contained" 
+            color="error"
+            sx={{ 
+              minWidth: { xs: '100%', sm: '120px' }
+            }}
+            onClick={handleDelete}
+          >
+            Delete
+          </Button>
+        )}
         <Button 
           variant="outlined"
           sx={{ 
@@ -104,6 +116,8 @@ export default function MemberDetail() {
         >
           Back to List
         </Button>
+        </Box>
+      </Paper>
       </Box>
     </Box>
   );

@@ -7,8 +7,10 @@ import org.mongodb.model.Member;
 
 public interface MemberRepo {
     Optional<Member> findById(String id);
+    Optional<Member> findByEmail(String email);
+    Optional<Member> findByUserId(String userId);
     CursorPage<Member> listMembersPage(int size, String cursor);
-    void save(Member member);
+    void register(Member member);
     void update(Member member);
     void deleteById(String id);
 }

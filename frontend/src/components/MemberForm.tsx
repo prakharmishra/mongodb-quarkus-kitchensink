@@ -6,7 +6,8 @@ import { useNotification } from '../contexts/NotificationContext';
 import { useLoading } from '../contexts/LoadingContext';
 
 interface MemberFormData {
-  name: string;
+  firstName: string;
+  lastName: string;
   email: string;
   phoneNumber: string;
 }
@@ -17,7 +18,8 @@ export default function MemberForm() {
   const { showSuccess, showError } = useNotification();
   const { showLoading, hideLoading } = useLoading();
   const [formData, setFormData] = useState<MemberFormData>({
-    name: '',
+    firstName: '',
+    lastName: '',
     email: '',
     phoneNumber: ''
   });
@@ -34,7 +36,8 @@ export default function MemberForm() {
         showLoading();
         const member = await MemberService.getMember(id);
         setFormData({
-          name: member.name,
+          firstName: member.firstName,
+          lastName: member.lastName,
           email: member.email,
           phoneNumber: member.phoneNumber
         });
@@ -75,17 +78,30 @@ export default function MemberForm() {
   };
 
   return (
-    <Box sx={{ width: '100%' }}>
-      <Typography variant="h4" sx={{ mb: 3, textAlign: 'center' }}>
-        {id ? 'Edit Member' : 'Create Member'}
-      </Typography>
-      <Paper sx={{ p: 4, mb: 3 }}>
-        <Box component="form" onSubmit={handleSubmit} sx={{ width: '100%' }}>
-          <TextField
+    <Box 
+      display='flex'
+      justifyContent='center'
+    >
+      <Box sx={{ maxWidth: 500, width: '100%' }}>
+      <Paper sx={{ p: 4 }}>
+        <Typography variant="h4" gutterBottom>
+          {id ? 'Edit Member' : 'Create Member'}
+        </Typography>
+        <Box component="form" onSubmit={handleSubmit} sx={{ mt: 2 }}>
+        <TextField
           fullWidth
-          label="Name"
-          name="name"
-          value={formData.name}
+          label="First Name"
+          name="firstName"
+          value={formData.firstName}
+          onChange={handleChange}
+          margin="normal"
+          required
+        />
+        <TextField
+          fullWidth
+          label="Last Name"
+          name="lastName"
+          value={formData.lastName}
           onChange={handleChange}
           margin="normal"
           required
@@ -99,6 +115,7 @@ export default function MemberForm() {
           onChange={handleChange}
           margin="normal"
           required
+          disabled
         />
         <TextField
           fullWidth
@@ -119,6 +136,7 @@ export default function MemberForm() {
         </Box>
         </Box>
       </Paper>
+      </Box>
     </Box>
   );
 }

@@ -5,6 +5,7 @@ import type { Member } from '../services/api';
 import { MemberService } from '../services/api';
 import { useNotification } from '../contexts/NotificationContext';
 import { useLoading } from '../contexts/LoadingContext';
+import { useAuth } from '../contexts/AuthContext';
 
 export default function MemberList() {
   const [members, setMembers] = useState<Member[]>([]);
@@ -13,6 +14,9 @@ export default function MemberList() {
   const navigate = useNavigate();
   const { showSuccess, showError } = useNotification();
   const { showLoading, hideLoading } = useLoading();
+  const { getUser } = useAuth();
+  const user = getUser();
+  const isAdmin = user?.realm_access?.roles?.includes('ADMIN') || false;
 
   const loadMembers = async (nextCursor?: string) => {
     try {
@@ -55,7 +59,6 @@ export default function MemberList() {
 
   return (
     <Box sx={{ 
-        p: { xs: 2, sm: 3 },  // Responsive padding
         maxWidth: '100%',
         overflowX: 'hidden'
       }}>
@@ -72,16 +75,6 @@ export default function MemberList() {
         }}>
           Members
         </Typography>
-        <Button 
-          variant="contained" 
-          color="primary"
-          sx={{ 
-            width: { xs: '100%', sm: 'auto' }  // Full width on mobile
-          }}
-          onClick={() => navigate('/members/new')}
-        >
-          Add New Member
-        </Button>
       </Box>
 
       <Box sx={{ 
@@ -100,7 +93,7 @@ export default function MemberList() {
               <Typography variant="h6" component="div" sx={{ 
                 fontSize: { xs: '1.1rem', sm: '1.25rem' }  // Smaller font on mobile
               }}>
-                {member.name}
+                {member.firstName} {member.lastName}
               </Typography>
               <Typography color="text.secondary" sx={{ wordBreak: 'break-word' }}>
                 {member.email}
@@ -128,14 +121,16 @@ export default function MemberList() {
               >
                 Edit
               </Button>
-              <Button 
-                sx={{ width: { xs: '100%', sm: 'auto' } }}
-                size="small" 
-                color="error" 
-                onClick={() => handleDelete(member.id)}
-              >
-                Delete
-              </Button>
+              {isAdmin && (
+                <Button 
+                  sx={{ width: { xs: '100%', sm: 'auto' } }}
+                  size="small" 
+                  color="error" 
+                  onClick={() => handleDelete(member.id)}
+                >
+                  Delete
+                </Button>
+              )}
             </CardActions>
           </Card>
         ))}
