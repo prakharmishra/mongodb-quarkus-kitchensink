@@ -36,7 +36,7 @@ jobs:
         mongo-db-password: ${{ secrets.MONGO_PASSWORD }}
       run: |
         cd backend
-        ./mvnw clean test jacoco:report
+        ./mvnw clean test jacoco:report -Dquarkus.profile=ci
     
     - name: Deploy coverage to GitHub Pages
       uses: peaceiris/actions-gh-pages@v3
