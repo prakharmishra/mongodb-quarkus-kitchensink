@@ -12,8 +12,6 @@ import org.mongodb.resource.viewmodel.UpsertMemberViewModel;
 import org.mongodb.service.MemberService;
 
 import io.quarkus.logging.Log;
-import org.slf4j.MDC;
-import java.util.UUID;
 
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -50,15 +48,8 @@ public class MemberResource {
     @Path("/{id}")
     @RolesAllowed({"ADMIN", "USER"})
     public Response getMemberById(String id) {
-        String requestId = UUID.randomUUID().toString();
-        MDC.put("requestId", requestId);
-        Log.info("Getting member by id: " + id);
-        
-        Optional<Member> result = memberService.findById(id);
-        Log.info("Member found: " + result.isPresent());
-        
-        MDC.clear();
-        return result.map(member -> Response.ok(member).build())
+        return memberService.findById(id)
+                .map(member -> Response.ok(member).build())
                 .orElse(Response.status(Response.Status.NOT_FOUND).build());
     }
 
@@ -68,55 +59,43 @@ public class MemberResource {
         @QueryParam("size") Optional<Integer> size,
         @QueryParam("cursor") Optional<String> cursor
     ) {
-        String requestId = UUID.randomUUID().toString();
-        MDC.put("requestId", requestId);
-        
         JsonWebToken token = jwt.get();
+        
+        // Check for ADMIN role using SecurityContext
         boolean isAdmin = securityContext.get().isUserInRole("ADMIN");
         String email = token.getClaim("email");
-        int pageSize = size.orElse(10);
 
-        Log.info(String.format("Listing members - User: %s, Role: %s, PageSize: %d", 
-                email, isAdmin ? "ADMIN" : "USER", pageSize));
+        Log.info(String.format("User %s is %s", email, isAdmin ? "ADMIN" : "USER"));
         
+        // If user is not ADMIN, return their own member data
         if (!isAdmin) {
-            Log.info("Non-admin user, returning own member data");
-            Optional<Member> member = memberService.findByEmail(email);
-            MDC.clear();
-            return member.map(m -> new CursorPage<Member>(List.of(m), null))
+            return memberService.findByEmail(email)
+                    .map(member -> new CursorPage<Member>(List.of(member), null))
                     .map(page -> Response.ok(page).build())
                     .orElse(Response.status(Response.Status.NOT_FOUND).build());
         }
 
+        int pageSize = size.orElse(10);
         if (pageSize <= 0) {
-            MDC.clear();
             return Response.status(Response.Status.BAD_REQUEST)
                     .entity("Size must be greater than 0")
                     .build();
         }
 
-        CursorPage<Member> result = memberService.findAll(pageSize, cursor.orElse(null));
-        Log.info("Returning " + result.data().size() + " members");
-        
-        MDC.clear();
-        return Response.ok(result).build();
+        return Response.ok(memberService.findAll(pageSize, cursor.orElse(null))).build();
     }
     
     @PUT
     @Path("/{id}")
     @RolesAllowed({"ADMIN", "USER"})
     public Response updateMember(@Valid @NotNull UpsertMemberViewModel memberViewModel, @PathParam("id") String id) {
-        String requestId = UUID.randomUUID().toString();
-        MDC.put("requestId", requestId);
-        Log.info("Updating member: " + id);
-        
         if (id == null || id.isBlank()) {
-            MDC.clear();
             return Response.status(Response.Status.BAD_REQUEST)
                     .entity(new KitchenSinkError("id cannot be blank"))
                     .build();
         }
 
+        // Only allow updates to first name, last name, and phone number
         Member member = new Member(
             new ObjectId(id),
             null,
@@ -128,9 +107,6 @@ public class MemberResource {
         );
 
         memberService.update(member);
-        Log.info("Member updated successfully");
-        
-        MDC.clear();
         return Response.ok().build();
     }
 
@@ -138,21 +114,12 @@ public class MemberResource {
     @Path("/{id}")
     @RolesAllowed("ADMIN")
     public Response deleteMember(@PathParam("id") String id) {
-        String requestId = UUID.randomUUID().toString();
-        MDC.put("requestId", requestId);
-        Log.info("Deleting member: " + id);
-        
         if (id == null || id.isBlank()) {
-            MDC.clear();
             return Response.status(Response.Status.BAD_REQUEST)
                     .entity(new KitchenSinkError("id cannot be blank"))
                     .build();
         }
-        
         memberService.deleteById(id);
-        Log.info("Member deleted successfully");
-        
-        MDC.clear();
         return Response.noContent().build();
     }
 }

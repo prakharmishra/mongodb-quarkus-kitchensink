@@ -27,7 +27,7 @@ class MemberServiceClassicTest {
     @Test
     void testFindByIdReturnsMember() {
         // Given
-        Member member = new Member(new ObjectId("689f3a9598292c14bf413125"), "user-id", "John Doe", "john@example.com", "1234567890");
+        Member member = new Member(new ObjectId("689f3a9598292c14bf413125"), "user-id", "johndoe", "John", "Doe", "john@example.com", "1234567890");
         when(memberRepo.findById("123")).thenReturn(Optional.of(member));
 
         // When
@@ -55,8 +55,8 @@ class MemberServiceClassicTest {
     @Test
     void testFindAllReturnsPage() {
         // Given
-        Member member1 = new Member(new ObjectId("689f3a9598292c14bf413125"), "user1", "John Doe", "john@example.com", "1234567890");
-        Member member2 = new Member(new ObjectId("234689f3a9598214bf413125"), "user2", "Jane Doe", "jane@example.com", "0987654321");
+        Member member1 = new Member(new ObjectId("689f3a9598292c14bf413125"), "user1", "johndoe", "John", "Doe", "john@example.com", "1234567890");
+        Member member2 = new Member(new ObjectId("234689f3a9598214bf413125"), "user2", "janedoe", "Jane", "Doe", "jane@example.com", "0987654321");
         List<Member> members = Arrays.asList(member1, member2);
         String nextCursor = "234";
         CursorPage<Member> page = new CursorPage<>(members, nextCursor);
@@ -75,23 +75,28 @@ class MemberServiceClassicTest {
     @Test
     void testSaveNewMember() {
         // Given
-        UpsertMemberViewModel viewModel = new UpsertMemberViewModel(
+        Member member = new Member(
+            null,
             "test-id",
-            "John Doe",
+            "johndoe",
+            "John",
+            "Doe",
             "john@example.com",
             "1234567890"
         );
 
         // When
-        memberService.register(viewModel, viewModel.userId(), viewModel.email());
+        memberService.register(member);
 
         // Then
-        verify(memberRepo).register(argThat(member -> 
-            member.id() == null &&
-            member.userId().equals("test-id") &&
-            member.name().equals("John Doe") &&
-            member.email().equals("john@example.com") &&
-            member.phoneNumber().equals("1234567890")
+        verify(memberRepo).register(argThat(savedMember -> 
+            savedMember.id() == null &&
+            savedMember.userId().equals("test-id") &&
+            savedMember.username().equals("johndoe") &&
+            savedMember.firstName().equals("John") &&
+            savedMember.lastName().equals("Doe") &&
+            savedMember.email().equals("john@example.com") &&
+            savedMember.phoneNumber().equals("1234567890")
         ));
     }
 
@@ -99,22 +104,28 @@ class MemberServiceClassicTest {
     void testUpdateExistingMember() {
         // Given
         String existingId = "689f3a9598292c14bf413125";
-        UpsertMemberViewModel viewModel = new UpsertMemberViewModel(
-            "689f3a9598292c14bf413125",
-            "John Doe Updated",
+        Member member = new Member(
+            new ObjectId(existingId),
+            "test-user-id",
+            "testuser",
+            "John",
+            "Doe Updated",
             "john.updated@example.com",
             "9876543210"
         );
 
         // When
-        memberService.update(viewModel, existingId);
+        memberService.update(member);
 
         // Then
-        verify(memberRepo).update(argThat(member -> 
-            member.id().equals(new ObjectId(existingId)) &&
-            member.name().equals("John Doe Updated") &&
-            member.email().equals("john.updated@example.com") &&
-            member.phoneNumber().equals("9876543210")
+        verify(memberRepo).update(argThat(gotMember -> 
+            gotMember.id().equals(new ObjectId(existingId)) &&
+            gotMember.userId().equals("test-user-id") &&
+            gotMember.username().equals("testuser") &&
+            gotMember.firstName().equals("John") &&
+            gotMember.lastName().equals("Doe Updated") &&
+            gotMember.email().equals("john.updated@example.com") &&
+            gotMember.phoneNumber().equals("9876543210")
         ));
     }
 

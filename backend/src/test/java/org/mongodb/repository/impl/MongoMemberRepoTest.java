@@ -51,7 +51,7 @@ public class MongoMemberRepoTest {
     void testFindById() {
         // Given
         ObjectId objectId = new ObjectId();
-        Member expectedMember = new Member(objectId, "user-id", "John Doe", "john@example.com", "1234567890");
+        Member expectedMember = new Member(objectId, "user-id", "johndoe", "John", "Doe", "john@example.com", "1234567890");
         
         when(findIterable.first()).thenReturn(expectedMember);
 
@@ -82,8 +82,8 @@ public class MongoMemberRepoTest {
         ObjectId id2 = new ObjectId();
         
         List<Member> members = Arrays.asList(
-            new Member(id1, "user1", "John Doe", "john@example.com", "1234567890"),
-            new Member(id2, "user2", "Jane Doe", "jane@example.com", "0987654321")
+            new Member(id1, "user1", "johndoe", "John", "Doe", "john@example.com", "1234567890"),
+            new Member(id2, "user2", "janedoe", "Jane", "Doe", "jane@example.com", "0987654321")
         );
 
         // findIterable setup is done in setUp()
@@ -113,7 +113,7 @@ public class MongoMemberRepoTest {
     void testSave() {
         // Given
         ObjectId id = new ObjectId();
-        Member member = new Member(id, "user-id", "John Doe", "john@example.com", "1234567890");
+        Member member = new Member(id, "user-id", "johndoe", "John", "Doe", "john@example.com", "1234567890");
 
         // When
         repo.register(member);
