@@ -1,5 +1,7 @@
 # MongoDB Quarkus Kitchen Sink
 
+![CI](https://github.com/your-username/mongodb-quarkus-kitchensink/workflows/CI/badge.svg)
+
 A full-stack web application demonstrating modern development practices with Quarkus backend, React frontend, and containerized development environment.
 
 ## Project Structure
@@ -92,6 +94,19 @@ npm install
 npm run dev
 ```
 Frontend will be available at: http://localhost:5173
+
+## Testing
+
+Run tests with coverage:
+
+```bash
+cd backend
+./mvnw clean test jacoco:report
+```
+
+View coverage report at: `backend/target/site/jacoco/index.html`
+
+**Online Coverage Report**: [View on GitHub Pages](https://your-username.github.io/mongodb-quarkus-kitchensink/coverage/)
 
 ## Services
 

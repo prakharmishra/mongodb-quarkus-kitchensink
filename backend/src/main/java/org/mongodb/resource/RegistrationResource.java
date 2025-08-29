@@ -2,15 +2,12 @@ package org.mongodb.resource;
 
 import org.eclipse.microprofile.jwt.JsonWebToken;
 import org.mongodb.model.RegistrationData;
-import org.mongodb.repository.MemberRepo;
-import org.mongodb.resource.viewmodel.RegistrationRequest;
 import org.mongodb.resource.viewmodel.UpsertMemberViewModel;
 import org.mongodb.service.MemberService;
 import org.mongodb.model.Member;
 
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.inject.Inject;
 import jakarta.inject.Provider;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
